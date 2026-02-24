@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.compose.composable
 
 // Colores personalizados basados en tu diseño
 val NutriGreen = Color(0xFF10B981) // Verde principal
@@ -32,14 +33,39 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                NutriAppScreen()
+                // Ahora iniciamos el navegador en lugar de la pantalla directamente
+                AppNavigation()
             }
         }
     }
 }
 
 @Composable
-fun NutriAppScreen() {
+fun AppNavigation() {
+    // Esto recuerda en qué pantalla estamos
+    val navController = androidx.navigation.compose.rememberNavController()
+
+    // El NavHost es el mapa de nuestras pantallas
+    androidx.navigation.compose.NavHost(navController = navController, startDestination = "home") {
+
+        // Pantalla 1: Inicio
+        composable("home") {
+            NutriAppScreen(
+                onNavigateToCreate = { navController.navigate("create_recipe") }
+                          )
+        }
+
+        // Pantalla 2: Crear Receta
+        composable("create_recipe") {
+            CreateRecipeScreen(
+                onNavigateBack = { navController.popBackStack() } // Esto nos hace volver atrás
+                              )
+        }
+    }
+}
+
+@Composable
+fun NutriAppScreen(onNavigateToCreate: () -> Unit) {
     Scaffold(
         containerColor = BackgroundColor,
         bottomBar = { BottomNavigationBar() },
@@ -53,10 +79,10 @@ fun NutriAppScreen() {
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
                   ) {
-            item { Spacer(modifier = Modifier.height(16.dp)) }
+            item { Spacer(modifier = Modifier.height(5.dp)) }
             item { TopBar() }
             item { GreetingSection() }
-            item { CreateRecipeButton() }
+            item { CreateRecipeButton(onClick = onNavigateToCreate) }
             item { SectionTitle("Últimas recetas") }
 
             // Lista de recetas de ejemplo
@@ -67,7 +93,7 @@ fun NutriAppScreen() {
                     time = if (index < 2) "20 min" else "25 min"
                           )
             }
-            item { Spacer(modifier = Modifier.height(80.dp)) } // Espacio para que no lo tape el BottomNav
+            item { Spacer(modifier = Modifier.height(60.dp)) } // Espacio para que no lo tape el BottomNav
         }
     }
 }
@@ -129,9 +155,9 @@ fun GreetingSection() {
 }
 
 @Composable
-fun CreateRecipeButton() {
+fun CreateRecipeButton(onClick: () -> Unit) {
     Button(
-        onClick = { /* Acción crear receta */ },
+        onClick = onClick,
         colors = ButtonDefaults.buttonColors(containerColor = NutriGreen),
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier
@@ -228,9 +254,8 @@ fun BottomNavigationBar() {
             selected = true,
             onClick = { }
                          )
-        // Espacio vacío para el Floating Action Button central
         NavigationBarItem(
-            icon = { Spacer(modifier = Modifier.size(24.dp)) },
+            icon = { Icon(Icons.Default.List, contentDescription = "Básicos") },
             label = { Text("Básicos") },
             selected = false,
             onClick = { },
