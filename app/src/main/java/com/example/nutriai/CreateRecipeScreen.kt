@@ -49,7 +49,19 @@ fun CreateRecipeScreen(onNavigateBack: () -> Unit) {
         Product(9, "Queso", R.drawable.queso),
         Product(10, "Yogur", R.drawable.yogur),
         Product(11, "Atún", R.drawable.atun),
-        Product(12, "Galletas", R.drawable.galleta)
+        Product(12, "Galletas", R.drawable.galleta),
+        Product(13, "Bacon", R.drawable.bacon),
+        Product(14, "Huevos", R.drawable.huevos),
+        Product(15, "Patatas", R.drawable.patatas),
+        Product(16, "Leche", R.drawable.botella_de_leche),
+        Product(17, "Pan", R.drawable.pan),
+        Product(18, "Plátanos", R.drawable.platano),
+        Product(19, "Cebolla", R.drawable.cebolla),
+        Product(20, "Pollo", R.drawable.pollo),
+        Product(21, "Queso", R.drawable.queso),
+        Product(22, "Yogur", R.drawable.yogur),
+        Product(23, "Atún", R.drawable.atun),
+        Product(24, "Galletas", R.drawable.galleta)
                                 )
 
     var products by remember { mutableStateOf(initialProducts) }
