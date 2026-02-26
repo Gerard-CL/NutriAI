@@ -1,5 +1,4 @@
 package com.example.nutriai
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,58 +8,58 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.nutriai.BackgroundColor
+import com.example.nutriai.NutriGreen
 
-// Estructura de datos para nuestros productos
+// 1. Modificamos la clase para que acepte un número entero (Int) que representa el R.drawable
 data class Product(
     val id: Int,
     val name: String,
-    val icon: ImageVector, // En el futuro lo cambiarás por un Int (R.drawable...)
+    val imageRes: Int, // <--- Aquí guardaremos el R.drawable.icono
     var isSelected: Boolean = false
                   )
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun CreateRecipeScreen(onNavigateBack: () -> Unit) {
-    // Lista inicial de productos
+
+    // 2. Lista de productos.
     val initialProducts = listOf(
-        Product(1, "Bacon", Icons.Default.Menu), // Usa iconos reales luego
-        Product(2, "Huevos", Icons.Default.Face),
-        Product(3, "Patatas", Icons.Default.Info),
-        Product(4, "Leche", Icons.Default.Delete),
-        Product(5, "Pan", Icons.Default.Home),
-        Product(6, "Plátanos", Icons.Default.ShoppingCart),
-        Product(7, "Cebolla", Icons.Default.AccountCircle),
-        Product(8, "Pollo", Icons.Default.Build),
-        Product(9, "Queso", Icons.Default.Warning),
-        Product(10, "Yogur", Icons.Default.ThumbUp),
-        Product(11, "Atún", Icons.Default.MailOutline),
-        Product(12, "Galletas", Icons.Default.Star)
+        Product(1, "Bacon", R.drawable.bacon),
+        Product(2, "Huevos", R.drawable.huevos),
+        Product(3, "Patatas", R.drawable.patatas),
+        Product(4, "Leche", R.drawable.botella_de_leche),
+        Product(5, "Pan", R.drawable.pan),
+        Product(6, "Plátanos", R.drawable.platano),
+        Product(7, "Cebolla", R.drawable.cebolla),
+        Product(8, "Pollo", R.drawable.pollo),
+        Product(9, "Queso", R.drawable.queso),
+        Product(10, "Yogur", R.drawable.yogur),
+        Product(11, "Atún", R.drawable.atun),
+        Product(12, "Galletas", R.drawable.galleta)
                                 )
 
-    // Estado: Aquí guardamos la lista y el texto del buscador
     var products by remember { mutableStateOf(initialProducts) }
     var searchQuery by remember { mutableStateOf("") }
-
-    // Contamos cuántos hay seleccionados
     val selectedCount = products.count { it.isSelected }
 
     Scaffold(
         containerColor = BackgroundColor,
         topBar = {
             Column(modifier = Modifier.background(BackgroundColor)) {
-                // Header superior (Logo NutriAI)
                 Row(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -70,7 +69,6 @@ fun CreateRecipeScreen(onNavigateBack: () -> Unit) {
                     Text("NutriAI", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 }
 
-                // Header secundario (Flecha y Título)
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -88,9 +86,8 @@ fun CreateRecipeScreen(onNavigateBack: () -> Unit) {
             }
         },
         bottomBar = {
-            // Botón verde inferior
             Button(
-                onClick = { /* Ir a ver recetas con los productos seleccionados */ },
+                onClick = { /* Acción para ir a recetas */ },
                 colors = ButtonDefaults.buttonColors(containerColor = NutriGreen),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
@@ -111,7 +108,6 @@ fun CreateRecipeScreen(onNavigateBack: () -> Unit) {
                 .padding(padding)
                 .padding(horizontal = 16.dp)
               ) {
-            // Barra de búsqueda
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -128,14 +124,12 @@ fun CreateRecipeScreen(onNavigateBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Cuadrícula de productos
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxSize()
                             ) {
-                // Filtramos por búsqueda
                 val filteredProducts = products.filter {
                     it.name.contains(searchQuery, ignoreCase = true)
                 }
@@ -143,26 +137,22 @@ fun CreateRecipeScreen(onNavigateBack: () -> Unit) {
                 items(filteredProducts, key = { it.id }) { product ->
                     ProductItem(
                         product = product,
-                        // ¡ESTA ES LA LÍNEA MÁGICA!
-                        modifier = Modifier.animateItem(), // Si te sale en rojo, prueba con: Modifier.animateItemPlacement()
-                        onClick = {
-                            // ... Aquí dentro dejas exactamente el mismo código
-                            // de val newList = ..., newList.remove..., etc. que ya tenías ...
+                        modifier = Modifier.animateItem() // Animación de movimiento
+                               ) {
+                        val newList = products.toMutableList()
+                        newList.remove(product)
+                        val updatedProduct = product.copy(isSelected = !product.isSelected)
 
-                            val newList = products.toMutableList()
-                            newList.remove(product)
-
-                            val updatedProduct = product.copy(isSelected = !product.isSelected)
-
-                            if (updatedProduct.isSelected) {
-                                newList.add(0, updatedProduct)
-                            } else {
-                                newList.add(updatedProduct)
-                            }
-
-                            products = newList
+                        if (updatedProduct.isSelected) {
+                            newList.add(0, updatedProduct)
+                        } else {
+                            // Se coloca justo después de los que están seleccionados
+                            val currentSelectedCount = newList.count { it.isSelected }
+                            newList.add(currentSelectedCount, updatedProduct)
                         }
-                               )
+
+                        products = newList
+                    }
                 }
             }
         }
@@ -189,16 +179,17 @@ fun ProductItem(product: Product, modifier: Modifier = Modifier, onClick: () -> 
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
               ) {
+            // 3. Usamos Icon con painterResource para tintar tu imagen PNG/SVG automáticamente
             Icon(
-                imageVector = product.icon,
+                painter = painterResource(id = product.imageRes),
                 contentDescription = product.name,
-                tint = contentColor,
+                tint = contentColor, // Cambia de negro a blanco
                 modifier = Modifier.size(40.dp)
                 )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = product.name,
-                color = contentColor,
+                color = contentColor, // Cambia de negro a blanco
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center

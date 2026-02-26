@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -167,9 +168,10 @@ fun CreateRecipeButton(onClick: () -> Unit) {
           ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = Icons.Default.Star, // Sustituir por tu icono de gorro de chef
-                contentDescription = null,
-                modifier = Modifier.size(36.dp)
+                painter = painterResource(id = R.drawable.sombrero_de_cocinero), // PONEMOS ESTO
+                contentDescription = "Gorro de Chef",
+                tint = Color.White, // Para que el icono sea blanco
+                modifier = Modifier.size(45.dp)
                 )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
