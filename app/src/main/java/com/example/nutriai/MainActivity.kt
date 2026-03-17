@@ -52,25 +52,38 @@ fun AppNavigation() {
         // Pantalla 1: Inicio
         composable("home") {
             NutriAppScreen(
-                onNavigateToCreate = { navController.navigate("create_recipe") }
+                onNavigateToCreate = { navController.navigate("create_recipe") },
+                onNavigateToBasicos = { navController.navigate("mis_basicos") } // <-- ¡Añade esta línea!
                           )
         }
 
         // Pantalla 2: Crear Receta
         composable("create_recipe") {
             CreateRecipeScreen(
-                onNavigateBack = { navController.popBackStack() } // Esto nos hace volver atrás
+                onNavigateBack = { navController.popBackStack() }
                               )
+        }
+
+        composable("mis_basicos") {
+            // Llama a tu función MisBasicosScreen aquí.
+            // Si le añades un botón de volver luego, puedes pasarle navController.popBackStack()
+            MisBasicosScreen()
         }
     }
 }
 
 @Composable
-fun NutriAppScreen(onNavigateToCreate: () -> Unit) {
-    Scaffold(
-        containerColor = BackgroundColor,
-        bottomBar = { BottomNavigationBar() },
-        floatingActionButton = { FloatingCenterButton() },
+fun NutriAppScreen(onNavigateToCreate: () -> Unit,onNavigateToBasicos: () -> Unit) {
+        Scaffold(
+            containerColor = BackgroundColor,
+            bottomBar = {
+                BottomNavigationBar(
+                    currentRoute = "home", // <-- Le decimos que estamos en Inicio
+                    onBasicosClick = onNavigateToBasicos
+                                   )
+            },
+// ... el resto sigue igual ...
+        floatingActionButton = { FloatingCenterButton(onClick = {/* Nada por ahora */}) },
         floatingActionButtonPosition = FabPosition.Center
             ) { paddingValues ->
         LazyColumn(
@@ -245,7 +258,11 @@ fun RecipeCard(title: String, calories: String, time: String) {
 }
 
 @Composable
-fun BottomNavigationBar() {
+fun BottomNavigationBar(
+    currentRoute: String, // <-- 1. Le decimos en qué pantalla estamos
+    onInicioClick: () -> Unit = {},
+    onBasicosClick: () -> Unit = {}
+                       ) {
     NavigationBar(
         containerColor = Color.White,
         tonalElevation = 8.dp
@@ -253,29 +270,28 @@ fun BottomNavigationBar() {
         NavigationBarItem(
             icon = { Icon(Icons.Default.Home, contentDescription = "Inicio") },
             label = { Text("Inicio") },
-            selected = true,
-            onClick = { }
+            selected = currentRoute == "home", // <-- 2. Se ilumina si estamos en "home"
+            onClick = onInicioClick
                          )
         NavigationBarItem(
             icon = { Icon(Icons.Default.List, contentDescription = "Básicos") },
             label = { Text("Básicos") },
-            selected = false,
-            onClick = { },
-            enabled = false
+            selected = currentRoute == "mis_basicos", // <-- 3. Se ilumina si estamos en "mis_basicos"
+            onClick = onBasicosClick
                          )
         NavigationBarItem(
             icon = { Icon(Icons.Default.Settings, contentDescription = "Configuración") },
             label = { Text("Configuración") },
-            selected = false,
+            selected = currentRoute == "config",
             onClick = { }
                          )
     }
 }
 
 @Composable
-fun FloatingCenterButton() {
+fun FloatingCenterButton( onClick: () -> Unit) {
     FloatingActionButton(
-        onClick = { /* Acción del centro */ },
+        onClick = onClick,
         containerColor = NutriGreen,
         contentColor = Color.White,
         shape = CircleShape,
