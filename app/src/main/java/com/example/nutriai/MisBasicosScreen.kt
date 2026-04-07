@@ -1,6 +1,7 @@
 package com.example.nutriai
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -41,20 +42,39 @@ import androidx.compose.material3.HorizontalDivider
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun MisBasicosScreen(
-    onNavigateBack: () -> Unit = {},
-    onNavigateToInicio: () -> Unit = {}
+    onNavigateToInicio: () -> Unit = {},
+    onNavigateToConfig: () -> Unit = {}
                     ) {
     // Lista inicial de productos (Añade aquí los tuyos)
     // He puesto los 3 primeros en true para que aparezcan arriba por defecto como en tu foto
     val initialProducts = listOf(
-        Product(1, "Aceite", R.drawable.aceite, isSelected = true),
-        Product(2, "Huevos", R.drawable.huevos, isSelected = true),
-        Product(3, "Sal", R.drawable.sal, isSelected = true),
+        Product(1, "Bacon", R.drawable.bacon),
+        Product(2, "Huevos", R.drawable.huevos),
+        Product(3, "Patatas", R.drawable.patatas),
         Product(4, "Leche", R.drawable.botella_de_leche),
         Product(5, "Pan", R.drawable.pan),
-        Product(6, "Plátanos", R.drawable.platano)
-        // ... añade el resto aquí
-                                )
+        Product(6, "Plátanos", R.drawable.platano),
+        Product(7, "Cebolla", R.drawable.cebolla),
+        Product(8, "Pollo", R.drawable.pollo),
+        Product(9, "Queso", R.drawable.queso),
+        Product(10, "Yogur", R.drawable.yogur),
+        Product(11, "Atún", R.drawable.atun),
+        Product(12, "Galletas", R.drawable.galleta),
+        Product(13, "Bacon", R.drawable.bacon),
+        Product(14, "Huevos", R.drawable.huevos),
+        Product(15, "Patatas", R.drawable.patatas),
+        Product(16, "Leche", R.drawable.botella_de_leche),
+        Product(17, "Pan", R.drawable.pan),
+        Product(18, "Plátanos", R.drawable.platano),
+        Product(19, "Cebolla", R.drawable.cebolla),
+        Product(20, "Pollo", R.drawable.pollo),
+        Product(21, "Queso", R.drawable.queso),
+        Product(22, "Yogur", R.drawable.yogur),
+        Product(23, "Atún", R.drawable.atun),
+        Product(24, "Galletas", R.drawable.galleta),
+        Product(25, "Aceite", R.drawable.aceite),
+        Product(26, "Sal", R.drawable.sal),
+        )
 
     var products by remember { mutableStateOf(initialProducts) }
     var searchQuery by remember { mutableStateOf("") }
@@ -72,6 +92,33 @@ fun MisBasicosScreen(
         containerColor = BackgroundColor,
         bottomBar = {
             Column {
+                // --- NUEVO: BOTÓN DE GUARDAR CONDICIONAL ---
+                // Si la lista de básicos tiene al menos 1 elemento, el botón aparece
+                AnimatedVisibility(
+                    visible = misBasicos.isNotEmpty()
+                                  ) {
+                    Button(
+                        onClick = {
+                            // TODO: Aquí pones la lógica para guardar los datos
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = NutriGreen),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(top = 8.dp)
+                            .height(50.dp),
+                        shape = RoundedCornerShape(25.dp)
+                          ) {
+                        Text(
+                            text = "Guardar",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                            )
+                    }
+                }
+                // --- FIN DEL NUEVO BOTÓN ---
+
                 // Buscador en la parte inferior como en tu diseño
                 Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                     OutlinedTextField(
@@ -92,7 +139,8 @@ fun MisBasicosScreen(
                 BottomNavigationBar(
                     currentRoute = "mis_basicos",
                     onInicioClick = onNavigateToInicio,
-                    onBasicosClick = { /* Ya estamos en básicos */ }
+                    onBasicosClick = { /* Ya estamos en básicos */ },
+                    onConfigClick = onNavigateToConfig
                                    )
             }
         }
@@ -116,17 +164,13 @@ fun MisBasicosScreen(
                         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                         verticalAlignment = Alignment.CenterVertically
                        ) {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Volver", modifier = Modifier.size(28.dp))
-                        }
                         Text(
                             text = "Mis Básicos",
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.weight(1f),
                             textAlign = TextAlign.Center
-                            )
-                        Spacer(modifier = Modifier.width(48.dp)) // Para centrar el texto compensando el botón
+                            ) // Para centrar el texto compensando el botón
                     }
                     Text(
                         text = "Que es lo que siempre sueles tener?",
@@ -336,3 +380,4 @@ fun SearchBarBottom() {
                          )
     }
 }
+

@@ -34,7 +34,8 @@ data class Product(
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-fun CreateRecipeScreen(onNavigateBack: () -> Unit) {
+fun CreateRecipeScreen(onNavigateBack: () -> Unit,
+                       onNavigateToRecipes: (String) -> Unit) {
 
     // 2. Lista de productos.
     val initialProducts = listOf(
@@ -99,8 +100,18 @@ fun CreateRecipeScreen(onNavigateBack: () -> Unit) {
         },
         bottomBar = {
             Button(
-                onClick = { /* Acción para ir a recetas */ },
+                onClick = {
+                    // 1. Filtramos los productos seleccionados
+                    val selectedItems = products.filter { it.isSelected }
+                    // 2. Sacamos solo los nombres y los unimos con comas (ej: "Huevos, Patatas")
+                    val ingredientsString = selectedItems.joinToString(", ") { it.name }
+                    // 3. Si está vacío, mandamos "Nada", si no, la lista
+                    val finalString = ingredientsString.ifEmpty { "Nada" }
+
+                    onNavigateToRecipes(finalString)
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = NutriGreen),
+// ...
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
                     .fillMaxWidth()

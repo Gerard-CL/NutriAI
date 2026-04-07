@@ -17,16 +17,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 
-// Colores personalizados basados en tu diseño
-val NutriGreen = Color(0xFF10B981) // Verde principal
-val BackgroundColor = Color(0xFFF8F9FA) // Fondo gris muy claro
+// Colores personalizados
+val NutriGreen = Color(0xFF10B981)
+val BackgroundColor = Color(0xFFF8F9FA)
 val TextColor = Color(0xFF1A1A1A)
 
 class MainActivity : ComponentActivity() {
@@ -34,7 +35,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                // Ahora iniciamos el navegador en lugar de la pantalla directamente
                 AppNavigation()
             }
         }
@@ -43,46 +43,115 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppNavigation() {
-    // Esto recuerda en qué pantalla estamos
-    val navController = androidx.navigation.compose.rememberNavController()
+    val navController = rememberNavController()
 
-    // El NavHost es el mapa de nuestras pantallas
-    androidx.navigation.compose.NavHost(navController = navController, startDestination = "home") {
+    NavHost(navController = navController, startDestination = "home") {
 
         // Pantalla 1: Inicio
         composable("home") {
             NutriAppScreen(
                 onNavigateToCreate = { navController.navigate("create_recipe") },
-                onNavigateToBasicos = { navController.navigate("mis_basicos") } // <-- ¡Añade esta línea!
+                onNavigateToBasicos = {
+                    navController.navigate("mis_basicos") {
+                        popUpTo("home") { inclusive = false }
+                    }
+                },
+                onNavigateToConfig = {
+                    navController.navigate("config") {
+                        popUpTo("home") { inclusive = false }
+                    }
+                }
                           )
         }
 
-        // Pantalla 2: Crear Receta
+        // Pantalla 2: Crear Receta (Elegir ingredientes)
         composable("create_recipe") {
             CreateRecipeScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToRecipes = { selectedIngredients ->
+                    // Navegamos pasando los ingredientes en la URL de la ruta
+                    navController.navigate("generated_recipes/$selectedIngredients")
+                }
+                              )
+        }
+
+        // Pantalla 2.5: Lista de Recetas Generadas
+        // Le indicamos que espere recibir una variable llamada {ingredients}
+        // Ruta de la lista
+        composable("generated_recipes/{ingredients}") { backStackEntry ->
+            val ingredients = backStackEntry.arguments?.getString("ingredients") ?: "Nada"
+
+            GeneratedRecipesScreen(
+                ingredientsString = ingredients,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDetail = { recipeTitle ->
+                    // <--- ESTA ES LA MAGIA QUE CAMBIA DE PANTALLA
+                    navController.navigate("recipe_detail/$recipeTitle")
+                }
+                                  )
+        }
+
+        // Ruta del detalle (asegúrate de tenerla)
+        composable("recipe_detail/{recipeTitle}") { backStackEntry ->
+            val title = backStackEntry.arguments?.getString("recipeTitle") ?: ""
+
+            RecipeDetailScreen(
+                recipeTitle = title,
                 onNavigateBack = { navController.popBackStack() }
                               )
         }
 
+        // Pantalla 3: Mis Básicos
         composable("mis_basicos") {
-            // Llama a tu función MisBasicosScreen aquí.
-            // Si le añades un botón de volver luego, puedes pasarle navController.popBackStack()
-            MisBasicosScreen()
+            MisBasicosScreen(
+                onNavigateToInicio = {
+                    navController.navigate("home") {
+                        popUpTo("home") { inclusive = false }
+                    }
+                },
+                onNavigateToConfig = {
+                    navController.navigate("config") {
+                        popUpTo("home") { inclusive = false }
+                    }
+                }
+                            )
+        }
+
+        // Pantalla 4: Configuración
+        composable("config") {
+            SettingsScreen(
+                onNavigateToInicio = {
+                    navController.navigate("home") {
+                        popUpTo("home") { inclusive = false }
+                    }
+                },
+                onNavigateToBasicos = {
+                    navController.navigate("mis_basicos") {
+                        popUpTo("home") { inclusive = false }
+                    }
+                },
+                onNavigateBack = { navController.popBackStack() }
+                          )
         }
     }
 }
 
 @Composable
-fun NutriAppScreen(onNavigateToCreate: () -> Unit,onNavigateToBasicos: () -> Unit) {
-        Scaffold(
-            containerColor = BackgroundColor,
-            bottomBar = {
-                BottomNavigationBar(
-                    currentRoute = "home", // <-- Le decimos que estamos en Inicio
-                    onBasicosClick = onNavigateToBasicos
-                                   )
-            },
-// ... el resto sigue igual ...
+fun NutriAppScreen(
+    onNavigateToCreate: () -> Unit,
+    onNavigateToBasicos: () -> Unit,
+    onNavigateToConfig: () -> Unit
+                  ) {
+    Scaffold(
+        containerColor = BackgroundColor,
+        bottomBar = {
+            BottomNavigationBar(
+                currentRoute = "home",
+                onInicioClick = { /* Ya estamos en Inicio */ },
+                onBasicosClick = onNavigateToBasicos,
+                onConfigClick = onNavigateToConfig
+                               )
+        },
         floatingActionButton = { FloatingCenterButton(onClick = {/* Nada por ahora */}) },
         floatingActionButtonPosition = FabPosition.Center
             ) { paddingValues ->
@@ -97,9 +166,8 @@ fun NutriAppScreen(onNavigateToCreate: () -> Unit,onNavigateToBasicos: () -> Uni
             item { TopBar() }
             item { GreetingSection() }
             item { CreateRecipeButton(onClick = onNavigateToCreate) }
-            item { SectionTitle("Últimas recetas") }
+            item { SectionTitle("Recetas Favoritas") }
 
-            // Lista de recetas de ejemplo
             items(4) { index ->
                 RecipeCard(
                     title = if (index < 2) "Crostas de Pollo" else "Tortilla de Patata",
@@ -107,11 +175,12 @@ fun NutriAppScreen(onNavigateToCreate: () -> Unit,onNavigateToBasicos: () -> Uni
                     time = if (index < 2) "20 min" else "25 min"
                           )
             }
-            item { Spacer(modifier = Modifier.height(60.dp)) } // Espacio para que no lo tape el BottomNav
+            item { Spacer(modifier = Modifier.height(60.dp)) }
         }
     }
 }
 
+// ... (TopBar, GreetingSection, CreateRecipeButton, SectionTitle, RecipeCard, FloatingCenterButton se quedan igual que los tenías) ...
 @Composable
 fun TopBar() {
     Row(
@@ -119,53 +188,29 @@ fun TopBar() {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
        ) {
-        // Logo y Nombre
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = Icons.Default.Face, // Cambiar por tu logo real
+                painter = painterResource(id = R.drawable.logo_nutriai),
                 contentDescription = "Logo",
                 tint = NutriGreen,
                 modifier = Modifier.size(32.dp)
                 )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "NutriAI",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextColor
-                )
+            Text(text = "NutriAI", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextColor)
         }
-
-        // Iconos de la derecha
         Row(verticalAlignment = Alignment.CenterVertically) {
-            BadgedBox(
-                badge = { Badge(containerColor = NutriGreen) }
-                     ) {
-                Icon(
-                    imageVector = Icons.Outlined.Notifications,
-                    contentDescription = "Notificaciones",
-                    modifier = Modifier.size(28.dp)
-                    )
+            BadgedBox(badge = { Badge(containerColor = NutriGreen) }) {
+                Icon(imageVector = Icons.Outlined.Notifications, contentDescription = "Notificaciones", modifier = Modifier.size(28.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
-            Icon(
-                imageVector = Icons.Default.AccountCircle,
-                contentDescription = "Perfil",
-                modifier = Modifier.size(32.dp)
-                )
+            Icon(imageVector = Icons.Default.AccountCircle, contentDescription = "Perfil", modifier = Modifier.size(32.dp))
         }
     }
 }
 
 @Composable
 fun GreetingSection() {
-    Text(
-        text = "Bienvenido, JUAN",
-        fontSize = 32.sp,
-        fontWeight = FontWeight.ExtraBold,
-        color = TextColor,
-        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-        )
+    Text(text = "Bienvenido, JUAN", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = TextColor, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
 }
 
 @Composable
@@ -174,36 +219,20 @@ fun CreateRecipeButton(onClick: () -> Unit) {
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(containerColor = NutriGreen),
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp),
+        modifier = Modifier.fillMaxWidth().height(80.dp),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
           ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                painter = painterResource(id = R.drawable.sombrero_de_cocinero), // PONEMOS ESTO
-                contentDescription = "Gorro de Chef",
-                tint = Color.White, // Para que el icono sea blanco
-                modifier = Modifier.size(45.dp)
-                )
+            Icon(painter = painterResource(id = R.drawable.gorro_chef), contentDescription = "Gorro de Chef", tint = Color.White, modifier = Modifier.size(45.dp)) // Ajusta el icono si tienes el painter
             Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = "CREAR RECETAS",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-                )
+            Text(text = "CREAR RECETAS", fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
 fun SectionTitle(title: String) {
-    Text(
-        text = title,
-        fontSize = 22.sp,
-        fontWeight = FontWeight.Bold,
-        color = TextColor
-        )
+    Text(text = title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = TextColor)
 }
 
 @Composable
@@ -214,39 +243,22 @@ fun RecipeCard(title: String, calories: String, time: String) {
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-           ) {
-            // Imagen Placeholder (Sustituir por Image real)
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.LightGray)
-               )
-
+        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(80.dp).clip(RoundedCornerShape(12.dp)).background(Color.LightGray))
             Spacer(modifier = Modifier.width(16.dp))
-
             Column {
                 Text(text = title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(8.dp))
-
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(text = calories, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-
                     Spacer(modifier = Modifier.width(16.dp))
-
                     Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(text = time, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 }
-
                 Spacer(modifier = Modifier.height(8.dp))
-
-                // Fila de Macros (Ejemplo básico)
                 Row {
                     Text(text = "🥩 20 g", fontSize = 10.sp, color = Color.Gray)
                     Spacer(modifier = Modifier.width(12.dp))
@@ -258,10 +270,27 @@ fun RecipeCard(title: String, calories: String, time: String) {
 }
 
 @Composable
+fun FloatingCenterButton(onClick: () -> Unit) {
+    FloatingActionButton(
+        onClick = onClick,
+        containerColor = NutriGreen,
+        contentColor = Color.White,
+        shape = CircleShape,
+        modifier = Modifier.offset(y = 20.dp)
+                        ) {
+        Icon(Icons.Default.List, contentDescription = "Básicos", modifier = Modifier.size(28.dp))
+    }
+}
+
+// ------------------------------------------------------------------
+// BARRA DE NAVEGACIÓN COMPARTIDA (LA USAMOS EN TODAS LAS PANTALLAS)
+// ------------------------------------------------------------------
+@Composable
 fun BottomNavigationBar(
-    currentRoute: String, // <-- 1. Le decimos en qué pantalla estamos
+    currentRoute: String,
     onInicioClick: () -> Unit = {},
-    onBasicosClick: () -> Unit = {}
+    onBasicosClick: () -> Unit = {},
+    onConfigClick: () -> Unit = {}
                        ) {
     NavigationBar(
         containerColor = Color.White,
@@ -270,33 +299,20 @@ fun BottomNavigationBar(
         NavigationBarItem(
             icon = { Icon(Icons.Default.Home, contentDescription = "Inicio") },
             label = { Text("Inicio") },
-            selected = currentRoute == "home", // <-- 2. Se ilumina si estamos en "home"
+            selected = currentRoute == "home",
             onClick = onInicioClick
                          )
         NavigationBarItem(
             icon = { Icon(Icons.Default.List, contentDescription = "Básicos") },
             label = { Text("Básicos") },
-            selected = currentRoute == "mis_basicos", // <-- 3. Se ilumina si estamos en "mis_basicos"
+            selected = currentRoute == "mis_basicos",
             onClick = onBasicosClick
                          )
         NavigationBarItem(
             icon = { Icon(Icons.Default.Settings, contentDescription = "Configuración") },
             label = { Text("Configuración") },
             selected = currentRoute == "config",
-            onClick = { }
+            onClick = onConfigClick
                          )
-    }
-}
-
-@Composable
-fun FloatingCenterButton( onClick: () -> Unit) {
-    FloatingActionButton(
-        onClick = onClick,
-        containerColor = NutriGreen,
-        contentColor = Color.White,
-        shape = CircleShape,
-        modifier = Modifier.offset(y = 20.dp) // Lo baja un poco para encajar en la barra
-                        ) {
-        Icon(Icons.Default.List, contentDescription = "Básicos", modifier = Modifier.size(28.dp))
     }
 }
