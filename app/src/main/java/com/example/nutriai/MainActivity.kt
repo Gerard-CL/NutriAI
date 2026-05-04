@@ -1,6 +1,7 @@
 package com.example.nutriai
 
 import android.os.Bundle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -44,6 +45,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    val recipeViewModel: RecipeViewModel = viewModel()
 
     NavHost(navController = navController, startDestination = "home") {
 
@@ -83,9 +85,9 @@ fun AppNavigation() {
 
             GeneratedRecipesScreen(
                 ingredientsString = ingredients,
+                viewModel = recipeViewModel, // <--- LE PASAMOS EL VIEWMODEL
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToDetail = { recipeTitle ->
-                    // <--- ESTA ES LA MAGIA QUE CAMBIA DE PANTALLA
                     navController.navigate("recipe_detail/$recipeTitle")
                 }
                                   )
@@ -97,6 +99,7 @@ fun AppNavigation() {
 
             RecipeDetailScreen(
                 recipeTitle = title,
+                viewModel = recipeViewModel, // <--- LE PASAMOS EL MISMO VIEWMODEL
                 onNavigateBack = { navController.popBackStack() }
                               )
         }

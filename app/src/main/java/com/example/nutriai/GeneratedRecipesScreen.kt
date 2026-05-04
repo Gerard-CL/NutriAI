@@ -1,6 +1,8 @@
 package com.example.nutriai
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -58,13 +60,16 @@ object RecipeState {
 // 1. Añadimos el parámetro de ingredientes a la pantalla
 @Composable
 fun GeneratedRecipesScreen(
-    ingredientsString: String, // Recibimos los ingredientes separados por comas
+    ingredientsString: String,
+    viewModel: RecipeViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToDetail: (String) -> Unit
                           ) {
     // 2. Simulamos la IA de Gemini analizando los ingredientes
-    val generatedRecipes = remember(ingredientsString) {
-        simulateGeminiAI(ingredientsString)
+    val generatedRecipes by viewModel.recipes.collectAsState()
+
+    LaunchedEffect(key1 = ingredientsString) {
+        viewModel.generateRecipes(ingredientsString)
     }
 
     Scaffold(
@@ -212,15 +217,22 @@ fun GeneratedRecipeCard(recipe: RecipeData,
 // --- REEMPLAZA TU ANTIGUO RecipeDetailScreen POR ESTE ---
 
 @Composable
-fun RecipeDetailScreen(recipeTitle: String, onNavigateBack: () -> Unit) {
-    val recipe = RecipeState.currentRecipes.find { it.title == recipeTitle }
+fun RecipeDetailScreen(
+    recipeTitle: String,
+    viewModel: RecipeViewModel, // <--- Recibimos el ViewModel
+    onNavigateBack: () -> Unit
+                      ) {
+    // 1. Buscamos la receta en la lista que tiene el ViewModel guardada
+    val recipes by viewModel.recipes.collectAsState()
+    val recipe = recipes.find { it.title == recipeTitle }
 
     if (recipe == null) {
         onNavigateBack()
         return
     }
 
-    var personas by remember { mutableStateOf(1) }
+    // 2. Cambiamos remember por rememberSaveable para que no se resetee al girar la pantalla
+    var personas by rememberSaveable { mutableStateOf(1) }
 
     Scaffold(containerColor = BackgroundColor) { padding ->
         LazyColumn(
