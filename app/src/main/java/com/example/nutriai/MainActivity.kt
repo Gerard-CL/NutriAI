@@ -67,39 +67,37 @@ fun AppNavigation() {
         }
 
         // Pantalla 2: Crear Receta (Elegir ingredientes)
+        // Pantalla 2: Crear Receta
         composable("create_recipe") {
             CreateRecipeScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToRecipes = { selectedIngredients ->
-                    // Navegamos pasando los ingredientes en la URL de la ruta
-                    navController.navigate("generated_recipes/$selectedIngredients")
+                    // 1. Le damos los ingredientes al ViewModel
+                    recipeViewModel.setIngredientsAndSearch(selectedIngredients)
+                    // 2. Navegamos "limpios", sin variables en la ruta
+                    navController.navigate("generated_recipes")
                 }
                               )
         }
 
-        // Pantalla 2.5: Lista de Recetas Generadas
-        // Le indicamos que espere recibir una variable llamada {ingredients}
-        // Ruta de la lista
-        composable("generated_recipes/{ingredients}") { backStackEntry ->
-            val ingredients = backStackEntry.arguments?.getString("ingredients") ?: "Nada"
-
+        // Pantalla 2.5: Lista de Recetas Generadas (Ruta limpia)
+        composable("generated_recipes") {
             GeneratedRecipesScreen(
-                ingredientsString = ingredients,
-                viewModel = recipeViewModel, // <--- LE PASAMOS EL VIEWMODEL
+                viewModel = recipeViewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToDetail = { recipeTitle ->
-                    navController.navigate("recipe_detail/$recipeTitle")
+                    // 1. Le decimos al ViewModel qué receta se ha tocado
+                    recipeViewModel.selectRecipe(recipeTitle)
+                    // 2. Navegamos al detalle "limpios"
+                    navController.navigate("recipe_detail")
                 }
                                   )
         }
 
-        // Ruta del detalle (asegúrate de tenerla)
-        composable("recipe_detail/{recipeTitle}") { backStackEntry ->
-            val title = backStackEntry.arguments?.getString("recipeTitle") ?: ""
-
+        // Ruta del detalle (Ruta limpia)
+        composable("recipe_detail") {
             RecipeDetailScreen(
-                recipeTitle = title,
-                viewModel = recipeViewModel, // <--- LE PASAMOS EL MISMO VIEWMODEL
+                viewModel = recipeViewModel,
                 onNavigateBack = { navController.popBackStack() }
                               )
         }
@@ -107,6 +105,7 @@ fun AppNavigation() {
         // Pantalla 3: Mis Básicos
         composable("mis_basicos") {
             MisBasicosScreen(
+                viewModel = recipeViewModel,
                 onNavigateToInicio = {
                     navController.navigate("home") {
                         popUpTo("home") { inclusive = false }

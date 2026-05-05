@@ -52,33 +52,23 @@ data class RecipeData(
     val steps: List<String>
                      )
 
-// 3. Nuestro almacén temporal
-object RecipeState {
-    var currentRecipes: List<RecipeData> = emptyList()
-}
-
-// 1. Añadimos el parámetro de ingredientes a la pantalla
 @Composable
 fun GeneratedRecipesScreen(
-    ingredientsString: String,
     viewModel: RecipeViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToDetail: (String) -> Unit
                           ) {
-    // 2. Simulamos la IA de Gemini analizando los ingredientes
+    // Escuchamos los datos y el estado de carga
     val generatedRecipes by viewModel.recipes.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
-    LaunchedEffect(key1 = ingredientsString) {
-        viewModel.generateRecipes(ingredientsString)
-    }
+    // Cuando cambian los ingredientes, le decimos al ViewModel que trabaje
+    val currentIngredients by viewModel.currentIngredients.collectAsState()
 
-    Scaffold(
-        containerColor = BackgroundColor
-            ) { padding ->
+    Scaffold(containerColor = BackgroundColor) { padding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(padding)
               ) {
-            // Flecha de retroceso (igual que antes)
             IconButton(onClick = onNavigateBack, modifier = Modifier.padding(16.dp)) {
                 Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Volver", tint = NutriGreen, modifier = Modifier.size(32.dp))
             }
@@ -89,78 +79,33 @@ fun GeneratedRecipesScreen(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp), textAlign = TextAlign.Center
                 )
 
-            // Texto dinámico para ver qué ha entendido la "IA"
             Text(
-                text = "Ingredientes detectados: $ingredientsString",
+                text = "Ingredientes detectados: $currentIngredients",
                 fontSize = 14.sp, color = Color.Gray,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), textAlign = TextAlign.Center
                 )
 
-            // Lista dinámica
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-                      ) {
-                items(generatedRecipes.size) { index ->
-                    // Reutilizamos la tarjeta que ya tenías creada
-                    GeneratedRecipeCard(recipe = generatedRecipes[index],
-                                        onClick = {onNavigateToDetail(generatedRecipes[index].title)})
+            // Si el ViewModel está cargando, mostramos la rueda. Si ya acabó, mostramos la lista.
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = NutriGreen)
                 }
-                item { Spacer(modifier = Modifier.height(32.dp)) }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                          ) {
+                    items(generatedRecipes.size) { index ->
+                        GeneratedRecipeCard(
+                            recipe = generatedRecipes[index],
+                            onClick = { onNavigateToDetail(generatedRecipes[index].title) }
+                                           )
+                    }
+                    item { Spacer(modifier = Modifier.height(32.dp)) }
+                }
             }
         }
     }
-}
-
-// 3. LA MAGIA: Esta función es nuestro "Fake JSON / Fake API"
-// --- REEMPLAZA TU ANTIGUA FUNCIÓN POR ESTA ---
-
-fun simulateGeminiAI(ingredientsText: String): List<RecipeData> {
-    val result = mutableListOf<RecipeData>()
-    val ingredients = ingredientsText.lowercase()
-
-    if (ingredients.contains("huevos") && ingredients.contains("patatas")) {
-        result.add(
-            RecipeData(
-                title = "Tortilla de Patata Clásica", calories = "300 Cal", time = "25 min", protein = "15 g", carbs = "30 g",
-                ingredients = listOf(
-                    IngredientData("Patata/s", 2, "unidades"),
-                    IngredientData("Huevo/s", 3, "unidades"),
-                    IngredientData("Cebolla", 50, "g")
-                                    ),
-                steps = listOf(
-                    "Pela y lava las patatas y la cebolla.",
-                    "Fríe las patatas y la cebolla a fuego medio.",
-                    "Bate los huevos y mezcla todo.",
-                    "Cuaja la tortilla en una sartén con un poco de aceite."
-                              )
-                      )
-                  )
-    }
-
-    if (result.isEmpty()) {
-        result.add(
-            RecipeData(
-                title = "Huevos Estrellados", calories = "200 Cal", time = "8 min", protein = "20 g", carbs = "80 g",
-                ingredients = listOf(
-                    IngredientData("Patata/s", 2, "unidades"),
-                    IngredientData("Huevo/s", 2, "unidades"),
-                    IngredientData("Jamón", 100, "g")
-                                    ),
-                steps = listOf(
-                    "Pela, lava y corta las patatas en rodajas finas.",
-                    "Fríe las patatas en abundante aceite.",
-                    "Fríe los huevos dejando la yema líquida.",
-                    "Coloca las patatas, el jamón por encima y los huevos coronando el plato."
-                              )
-                      )
-                  )
-    }
-
-    // Guardamos el resultado en el almacén
-    RecipeState.currentRecipes = result
-
-    return result
 }
 
 @Composable
@@ -218,24 +163,33 @@ fun GeneratedRecipeCard(recipe: RecipeData,
 
 @Composable
 fun RecipeDetailScreen(
-    recipeTitle: String,
-    viewModel: RecipeViewModel, // <--- Recibimos el ViewModel
+    viewModel: RecipeViewModel,
     onNavigateBack: () -> Unit
                       ) {
-    // 1. Buscamos la receta en la lista que tiene el ViewModel guardada
-    val recipes by viewModel.recipes.collectAsState()
-    val recipe = recipes.find { it.title == recipeTitle }
+    // 1. Obtenemos el "State" (la caja) usando '='
+    val recipeState = viewModel.selectedRecipe.collectAsState()
 
+    // 2. Extraemos el contenido real de la caja a una variable local inmutable
+    val recipe = recipeState.value
+
+    // 3. Verificamos nulos. Si es null, volvemos atrás.
     if (recipe == null) {
-        onNavigateBack()
-        return
+        // En Compose, para navegar por un error al cargar la pantalla,
+        // SIEMPRE hay que usar LaunchedEffect para no romper el dibujado.
+        LaunchedEffect(Unit) {
+            onNavigateBack()
+        }
+        return // Cortamos la ejecución aquí para que no siga leyendo el código
     }
 
-    // 2. Cambiamos remember por rememberSaveable para que no se resetee al girar la pantalla
+    // --- A PARTIR DE ESTA LÍNEA, KOTLIN YA SABE QUE 'recipe' ES SEGURO ---
+    // Ya te dejará acceder a recipe.title, recipe.calories, etc.
+
     var personas by rememberSaveable { mutableStateOf(1) }
 
     Scaffold(containerColor = BackgroundColor) { padding ->
         LazyColumn(
+// ... EL RESTO DE TU CÓDIGO SE QUEDA EXACTAMENTE IGUAL ...
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
                   ) {

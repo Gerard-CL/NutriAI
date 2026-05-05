@@ -42,49 +42,20 @@ import androidx.compose.material3.HorizontalDivider
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun MisBasicosScreen(
+    viewModel: RecipeViewModel,
     onNavigateToInicio: () -> Unit = {},
     onNavigateToConfig: () -> Unit = {}
                     ) {
     // Lista inicial de productos (Añade aquí los tuyos)
     // He puesto los 3 primeros en true para que aparezcan arriba por defecto como en tu foto
-    val initialProducts = listOf(
-        Product(1, "Bacon", R.drawable.bacon),
-        Product(2, "Huevos", R.drawable.huevos),
-        Product(3, "Patatas", R.drawable.patatas),
-        Product(4, "Leche", R.drawable.botella_de_leche),
-        Product(5, "Pan", R.drawable.pan),
-        Product(6, "Plátanos", R.drawable.platano),
-        Product(7, "Cebolla", R.drawable.cebolla),
-        Product(8, "Pollo", R.drawable.pollo),
-        Product(9, "Queso", R.drawable.queso),
-        Product(10, "Yogur", R.drawable.yogur),
-        Product(11, "Atún", R.drawable.atun),
-        Product(12, "Galletas", R.drawable.galleta),
-        Product(13, "Bacon", R.drawable.bacon),
-        Product(14, "Huevos", R.drawable.huevos),
-        Product(15, "Patatas", R.drawable.patatas),
-        Product(16, "Leche", R.drawable.botella_de_leche),
-        Product(17, "Pan", R.drawable.pan),
-        Product(18, "Plátanos", R.drawable.platano),
-        Product(19, "Cebolla", R.drawable.cebolla),
-        Product(20, "Pollo", R.drawable.pollo),
-        Product(21, "Queso", R.drawable.queso),
-        Product(22, "Yogur", R.drawable.yogur),
-        Product(23, "Atún", R.drawable.atun),
-        Product(24, "Galletas", R.drawable.galleta),
-        Product(25, "Aceite", R.drawable.aceite),
-        Product(26, "Sal", R.drawable.sal),
-        )
+    val products by viewModel.basicosProducts.collectAsState()
 
-    var products by remember { mutableStateOf(initialProducts) }
     var searchQuery by remember { mutableStateOf("") }
 
-    // 1. Primero filtramos por lo que escriba el usuario en el buscador
     val filteredProducts = products.filter {
         it.name.contains(searchQuery, ignoreCase = true)
     }
 
-    // 2. Dividimos los resultados en dos listas para las dos secciones
     val misBasicos = filteredProducts.filter { it.isSelected }
     val masProductos = filteredProducts.filter { !it.isSelected }
 
@@ -187,10 +158,8 @@ fun MisBasicosScreen(
                     product = product,
                     modifier = Modifier.animateItem() // ¡Esto hace la animación suave al cambiar de lista!
                            ) {
-                    // Al pulsar, invertimos su estado (de true a false)
-                    products = products.map {
-                        if (it.id == product.id) it.copy(isSelected = !it.isSelected) else it
-                    }
+                    // LLAMAMOS AL VIEWMODEL
+                    viewModel.toggleBasicoSelection(product.id)
                 }
             }
 
@@ -216,10 +185,8 @@ fun MisBasicosScreen(
                     product = product,
                     modifier = Modifier.animateItem()
                            ) {
-                    // Al pulsar, invertimos su estado (de false a true)
-                    products = products.map {
-                        if (it.id == product.id) it.copy(isSelected = !it.isSelected) else it
-                    }
+                    // LLAMAMOS AL VIEWMODEL
+                    viewModel.toggleBasicoSelection(product.id)
                 }
             }
         }
