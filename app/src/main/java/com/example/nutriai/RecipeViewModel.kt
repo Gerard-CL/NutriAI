@@ -24,7 +24,6 @@ class RecipeViewModel : ViewModel() {
     private val _currentIngredients = MutableStateFlow("Nada")
     val currentIngredients: StateFlow<String> = _currentIngredients.asStateFlow()
 
-    // NUEVO: Guardamos la receta que el usuario quiere ver en detalle
     private val _selectedRecipe = MutableStateFlow<RecipeData?>(null)
     val selectedRecipe: StateFlow<RecipeData?> = _selectedRecipe.asStateFlow()
 

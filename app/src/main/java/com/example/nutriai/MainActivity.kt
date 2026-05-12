@@ -47,7 +47,56 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val recipeViewModel: RecipeViewModel = viewModel()
 
-    NavHost(navController = navController, startDestination = "home") {
+    NavHost(navController = navController, startDestination = "welcome") {
+
+        // --- RUTAS DE AUTENTICACIÓN Y ONBOARDING ---
+
+        // Pantalla 0: Bienvenida
+        composable("welcome") {
+            WelcomeScreen(
+                onNavigateToLogin = { navController.navigate("login") },
+                onNavigateToRegister = { navController.navigate("register") }
+                         )
+        }
+
+        // Pantalla de Login (Marcador de posición)
+        composable("login") {
+            DummyLoginScreen(
+                onLoginSuccess = {
+                    navController.navigate("home") {
+                        popUpTo("welcome") { inclusive = true }
+                    }
+                }
+                            )
+        }
+
+        // Pantalla de Registro Real
+        composable("register") {
+            RegisterScreen(
+                onRegisterSuccess = {
+                    // Al darle a "Done", vamos al cuestionario
+                    navController.navigate("onboarding")
+                }
+                          )
+        }
+
+        // Pantalla del Cuestionario Dinámico
+        composable("onboarding") {
+            OnboardingScreen(
+                onFinishOnboarding = {
+                    // Al terminar el cuestionario, vamos a la app y borramos el historial
+                    navController.navigate("home") {
+                        popUpTo("welcome") { inclusive = true }
+                    }
+                },
+                onNavigateBack = {
+                    navController.popBackStack() // Vuelve al registro
+                }
+                            )
+        }
+
+
+        // --- RUTAS PRINCIPALES DE LA APP ---
 
         // Pantalla 1: Inicio
         composable("home") {
@@ -66,35 +115,30 @@ fun AppNavigation() {
                           )
         }
 
-        // Pantalla 2: Crear Receta (Elegir ingredientes)
         // Pantalla 2: Crear Receta
         composable("create_recipe") {
             CreateRecipeScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToRecipes = { selectedIngredients ->
-                    // 1. Le damos los ingredientes al ViewModel
                     recipeViewModel.setIngredientsAndSearch(selectedIngredients)
-                    // 2. Navegamos "limpios", sin variables en la ruta
                     navController.navigate("generated_recipes")
                 }
                               )
         }
 
-        // Pantalla 2.5: Lista de Recetas Generadas (Ruta limpia)
+        // Pantalla 2.5: Lista de Recetas Generadas
         composable("generated_recipes") {
             GeneratedRecipesScreen(
                 viewModel = recipeViewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToDetail = { recipeTitle ->
-                    // 1. Le decimos al ViewModel qué receta se ha tocado
                     recipeViewModel.selectRecipe(recipeTitle)
-                    // 2. Navegamos al detalle "limpios"
                     navController.navigate("recipe_detail")
                 }
                                   )
         }
 
-        // Ruta del detalle (Ruta limpia)
+        // Pantalla de detalle de la receta
         composable("recipe_detail") {
             RecipeDetailScreen(
                 viewModel = recipeViewModel,
@@ -137,6 +181,8 @@ fun AppNavigation() {
         }
     }
 }
+
+// --- INTERFAZ DE LA PANTALLA DE INICIO (Home) ---
 
 @Composable
 fun NutriAppScreen(
@@ -182,7 +228,6 @@ fun NutriAppScreen(
     }
 }
 
-// ... (TopBar, GreetingSection, CreateRecipeButton, SectionTitle, RecipeCard, FloatingCenterButton se quedan igual que los tenías) ...
 @Composable
 fun TopBar() {
     Row(
@@ -192,7 +237,7 @@ fun TopBar() {
        ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                painter = painterResource(id = R.drawable.logo_nutriai),
+                painter = painterResource(id = R.drawable.logo_nutriai), // Necesitas tu logo aquí
                 contentDescription = "Logo",
                 tint = NutriGreen,
                 modifier = Modifier.size(32.dp)
@@ -225,7 +270,7 @@ fun CreateRecipeButton(onClick: () -> Unit) {
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
           ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(painter = painterResource(id = R.drawable.gorro_chef), contentDescription = "Gorro de Chef", tint = Color.White, modifier = Modifier.size(45.dp)) // Ajusta el icono si tienes el painter
+            Icon(painter = painterResource(id = R.drawable.gorro_chef), contentDescription = "Gorro de Chef", tint = Color.White, modifier = Modifier.size(45.dp)) // Necesitas tu icono aquí
             Spacer(modifier = Modifier.width(16.dp))
             Text(text = "CREAR RECETAS", fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
@@ -284,9 +329,6 @@ fun FloatingCenterButton(onClick: () -> Unit) {
     }
 }
 
-// ------------------------------------------------------------------
-// BARRA DE NAVEGACIÓN COMPARTIDA (LA USAMOS EN TODAS LAS PANTALLAS)
-// ------------------------------------------------------------------
 @Composable
 fun BottomNavigationBar(
     currentRoute: String,
@@ -316,5 +358,23 @@ fun BottomNavigationBar(
             selected = currentRoute == "config",
             onClick = onConfigClick
                          )
+    }
+}
+
+// ------------------------------------------------------------------
+// PANTALLAS TEMPORALES (Borrar cuando hagas la real de Login)
+// ------------------------------------------------------------------
+@Composable
+fun DummyLoginScreen(onLoginSuccess: () -> Unit) {
+    Column(
+        Modifier.fillMaxSize().padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+          ) {
+        Text("Pantalla de Iniciar Sesión", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(30.dp))
+        Button(onClick = onLoginSuccess, colors = ButtonDefaults.buttonColors(containerColor = NutriGreen)) {
+            Text("Simular Login Correcto -> Entrar a la App")
+        }
     }
 }
