@@ -183,10 +183,16 @@ fun CreateRecipeScreen(onNavigateBack: () -> Unit,
 }
 
 @Composable
-fun ProductItem(product: Product, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val bgColor = if (product.isSelected) NutriGreen else Color.White
+fun ProductItem(
+    product: Product,
+    modifier: Modifier = Modifier,
+    selectedColor: Color = NutriGreen, // <--- 1. AÑADIMOS EL COLOR POR DEFECTO
+    onClick: () -> Unit
+               ) {
+    // 2. AHORA USAMOS LA VARIABLE 'selectedColor' EN VEZ DE FIJARLO A 'NutriGreen'
+    val bgColor = if (product.isSelected) selectedColor else Color.White
     val contentColor = if (product.isSelected) Color.White else Color.Black
-    val borderColor = if (product.isSelected) NutriGreen else Color(0xFFEEEEEE)
+    val borderColor = if (product.isSelected) selectedColor else Color(0xFFEEEEEE)
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -202,17 +208,16 @@ fun ProductItem(product: Product, modifier: Modifier = Modifier, onClick: () -> 
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
               ) {
-            // 3. Usamos Icon con painterResource para tintar tu imagen PNG/SVG automáticamente
             Icon(
                 painter = painterResource(id = product.imageRes),
                 contentDescription = product.name,
-                tint = contentColor, // Cambia de negro a blanco
+                tint = contentColor,
                 modifier = Modifier.size(40.dp)
                 )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = product.name,
-                color = contentColor, // Cambia de negro a blanco
+                color = contentColor,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center
