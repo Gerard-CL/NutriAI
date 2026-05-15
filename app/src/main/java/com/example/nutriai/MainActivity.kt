@@ -83,6 +83,7 @@ fun AppNavigation() {
         // Pantalla del Cuestionario Dinámico
         composable("onboarding") {
             OnboardingScreen(
+                viewModel = recipeViewModel,
                 onFinishOnboarding = {
                     // Al terminar el cuestionario, vamos a la app y borramos el historial
                     navController.navigate("home") {
@@ -164,6 +165,7 @@ fun AppNavigation() {
         }
 
         // Pantalla 4: Configuración
+        // Pantalla 4: Configuración
         composable("config") {
             SettingsScreen(
                 onNavigateToInicio = {
@@ -176,9 +178,43 @@ fun AppNavigation() {
                         popUpTo("home") { inclusive = false }
                     }
                 },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() }, // <--- Faltaba esta coma
+
+                // <--- FALTABA ESTE BLOQUE ENTERO --->
+                onNavigateToSettingDetail = { route ->
+                    navController.navigate(route)
+                }
                           )
         }
+        composable("settings_portions") {
+            SettingsPortionsScreen(
+                viewModel = recipeViewModel,
+                onNavigateBack = { navController.popBackStack() }
+                                  )
+        }
+
+        composable("settings_gender") {
+            SettingsGenderScreen(viewModel = recipeViewModel, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("settings_disliked") {
+            SettingsDislikedScreen(viewModel = recipeViewModel, onNavigateBack = { navController.popBackStack() })
+        }
+
+        // --- RUTAS DE CONFIGURACIÓN QUE FALTABAN ---
+
+        composable("settings_level") {
+            SettingsLevelScreen(viewModel = recipeViewModel, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("settings_time") {
+            SettingsTimeScreen(viewModel = recipeViewModel, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("settings_allergies") {
+            SettingsAllergiesScreen(viewModel = recipeViewModel, onNavigateBack = { navController.popBackStack() })
+        }
+
     }
 }
 

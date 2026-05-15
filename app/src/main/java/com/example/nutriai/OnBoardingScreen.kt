@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnboardingScreen(
+    viewModel: RecipeViewModel,
     onFinishOnboarding: () -> Unit,
     onNavigateBack: () -> Unit
                     ) {
@@ -87,6 +88,15 @@ fun OnboardingScreen(
             Box(modifier = Modifier.padding(24.dp).fillMaxWidth()) {
                 Button(
                     onClick = {
+                        when (pagerState.currentPage) {
+                            0 -> viewModel.setGender(selectedGender)
+                            1 -> viewModel.setPortions(selectedPortions)
+                            2 -> viewModel.setLevel(selectedLevel)
+                            3 -> viewModel.setTime(selectedTime)
+                            4 -> viewModel.setRestrictions(selectedRestrictions)
+                            5 -> viewModel.setDislikedFoods(dislikedFoodIds)
+                            6 -> viewModel.setStapleFoods(stapleFoodIds)
+                        }
                         if (pagerState.currentPage < totalPages - 1) {
                             coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
                         } else {
@@ -186,8 +196,14 @@ fun OnboardingScreen(
                         }
                     }
 
+                    // ---------------------------------------------------------
+                    // PÁGINA 6: ALIMENTOS QUE NO LE GUSTAN
+                    // ---------------------------------------------------------
                     5 -> {
-                        val filteredProducts = allProducts.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                        // 1. AÑADIMOS EL ORDENAMIENTO AQUÍ
+                        val filteredProducts = allProducts
+                            .filter { it.name.contains(searchQuery, ignoreCase = true) }
+                            .sortedByDescending { dislikedFoodIds.contains(it.id) }
 
                         Column(modifier = Modifier.fillMaxSize()) {
                             SearchBarOnboarding(searchQuery) { searchQuery = it }
@@ -200,14 +216,12 @@ fun OnboardingScreen(
                                 modifier = Modifier.fillMaxSize()
                                             ) {
                                 items(filteredProducts, key = { it.id }) { product ->
-                                    // Comprobamos si el ID de este producto está en la lista de "no me gustan"
                                     val isSelected = dislikedFoodIds.contains(product.id)
-                                    // Le pasamos una "copia" del producto obligando al isSelected a ser el correcto
                                     val displayProduct = product.copy(isSelected = isSelected)
 
-                                    // ¡AQUÍ ESTÁ LA MAGIA! Llamamos a TU función
                                     ProductItem(
                                         product = displayProduct,
+                                        modifier = Modifier.animateItem(), // 2. AÑADIMOS LA ANIMACIÓN AQUÍ
                                         selectedColor = TextColor,
                                         onClick = {
                                             dislikedFoodIds = if (isSelected) dislikedFoodIds - product.id else dislikedFoodIds + product.id
@@ -218,8 +232,14 @@ fun OnboardingScreen(
                         }
                     }
 
+                    // ---------------------------------------------------------
+                    // PÁGINA 7: ALIMENTOS BÁSICOS
+                    // ---------------------------------------------------------
                     6 -> {
-                        val filteredProducts = allProducts.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                        // 1. AÑADIMOS EL ORDENAMIENTO AQUÍ (Usando stapleFoodIds)
+                        val filteredProducts = allProducts
+                            .filter { it.name.contains(searchQuery, ignoreCase = true) }
+                            .sortedByDescending { stapleFoodIds.contains(it.id) }
 
                         Column(modifier = Modifier.fillMaxSize()) {
                             SearchBarOnboarding(searchQuery) { searchQuery = it }
@@ -235,9 +255,9 @@ fun OnboardingScreen(
                                     val isSelected = stapleFoodIds.contains(product.id)
                                     val displayProduct = product.copy(isSelected = isSelected)
 
-                                    // ¡Volvemos a llamar a TU función!
                                     ProductItem(
                                         product = displayProduct,
+                                        modifier = Modifier.animateItem(), // 2. AÑADIMOS LA ANIMACIÓN AQUÍ
                                         selectedColor = TextColor,
                                         onClick = {
                                             stapleFoodIds = if (isSelected) stapleFoodIds - product.id else stapleFoodIds + product.id
@@ -258,7 +278,7 @@ fun OnboardingScreen(
 // ---------------------------------------------------------
 
 @Composable
-fun OnboardingOptionButton(text: String, isSelected: Boolean, onClick: () -> Unit) {
+fun OnboardingOptionButton(text: String, isSelected: Boolean, selectedColor: Color = TextColor, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().height(55.dp),

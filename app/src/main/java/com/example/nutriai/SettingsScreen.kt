@@ -1,6 +1,7 @@
 package com.example.nutriai
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,19 +20,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-data class SettingsOption(val title: String)
+// 1. Data class actualizada con la ruta de navegación
+data class SettingsOption(val title: String, val route: String)
 
 @Composable
 fun SettingsScreen(
     onNavigateToInicio: () -> Unit,
     onNavigateToBasicos: () -> Unit,
-    onNavigateBack: () -> Unit // Recibimos la acción de volver
+    onNavigateBack: () -> Unit,
+    // 2. Nueva función para navegar al detalle de cada ajuste
+    onNavigateToSettingDetail: (String) -> Unit
                   ) {
+    // 3. Lista de opciones vinculadas a sus rutas exactas
     val options = listOf(
-        SettingsOption("Para cuántos cocinas"),
-        SettingsOption("Tiempo para cocinar"),
-        SettingsOption("Alergias"),
-        SettingsOption("Alimentos que no te gustan")
+        SettingsOption("Elige tu género", "settings_gender"),
+        SettingsOption("Para cuántos cocinas", "settings_portions"),
+        SettingsOption("Tu nivel en la cocina", "settings_level"),
+        SettingsOption("Tiempo para cocinar", "settings_time"),
+        SettingsOption("Alergías", "settings_allergies"),
+        SettingsOption("Alimentos no te gustan", "settings_disliked")
                         )
 
     Scaffold(
@@ -56,7 +63,11 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
                   ) {
             items(options) { option ->
-                SettingsRow(option = option)
+                SettingsRow(
+                    option = option,
+                    // 4. Mandamos la ruta cuando el usuario toca la fila
+                    onClick = { onNavigateToSettingDetail(option.route) }
+                           )
             }
         }
     }
@@ -96,7 +107,7 @@ fun SettingsHeader(onBackClick: () -> Unit) {
             contentAlignment = Alignment.Center
            ) {
             IconButton(
-                onClick = onBackClick, // Asignamos la acción a la flecha
+                onClick = onBackClick,
                 modifier = Modifier.align(Alignment.CenterStart)
                       ) {
                 Icon(
@@ -116,10 +127,11 @@ fun SettingsHeader(onBackClick: () -> Unit) {
 }
 
 @Composable
-fun SettingsRow(option: SettingsOption) {
+fun SettingsRow(option: SettingsOption, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onClick() } // 5. Hace la fila clicable
             .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

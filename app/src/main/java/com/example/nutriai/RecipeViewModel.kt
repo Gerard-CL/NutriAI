@@ -10,10 +10,12 @@ import kotlinx.coroutines.launch
 
 class RecipeViewModel : ViewModel() {
 
-    // --- EL INTERRUPTOR MÁGICO ---
+    // ---------------------------------------------------------
+    // BLOQUE 1: LÓGICA DE RECETAS Y MOCK API (Tu código original)
+    // ---------------------------------------------------------
     // Ponlo en 'true' para usar datos falsos y diseñar.
     // Ponlo en 'false' cuando arranques tu Spring Boot.
-    private val USE_MOCK_API = true
+    private val USE_MOCK_API = false
 
     private val _recipes = MutableStateFlow<List<RecipeData>>(emptyList())
     val recipes: StateFlow<List<RecipeData>> = _recipes.asStateFlow()
@@ -53,14 +55,12 @@ class RecipeViewModel : ViewModel() {
         Product(23, "Atún", R.drawable.atun),
         Product(24, "Galletas", R.drawable.galleta),
         Product(25, "Aceite", R.drawable.aceite),
-        Product(26, "Sal", R.drawable.sal),
+        Product(26, "Sal", R.drawable.sal)
                                 )
 
-    // 2. Creamos el estado para que la pantalla lo escuche
     private val _basicosProducts = MutableStateFlow(initialProducts)
     val basicosProducts: StateFlow<List<Product>> = _basicosProducts.asStateFlow()
 
-    // 3. Función para marcar/desmarcar un producto
     fun toggleBasicoSelection(productId: Int) {
         _basicosProducts.value = _basicosProducts.value.map { product ->
             if (product.id == productId) {
@@ -71,13 +71,22 @@ class RecipeViewModel : ViewModel() {
         }
     }
 
-    // NUEVO: Función para guardar ingredientes y lanzar la búsqueda a la vez
     fun setIngredientsAndSearch(ingredients: String) {
+        // 1. Guardamos los ingredientes cortos ("Huevos, Patatas") solo para que la UI los muestre
         _currentIngredients.value = ingredients
-        generateRecipes(ingredients)
+
+        // 2. Construimos el Super-Prompt con todo el contexto
+        val fullPromptForAI = buildAIPrompt(ingredients)
+
+        // 3. Imprimimos en la consola de Android Studio para que tú veas qué se envía realmente
+        println("=== ENVIANDO A LA IA ===")
+        println(fullPromptForAI)
+        println("========================")
+
+        // 4. Se lo mandamos a Retrofit (o al simulador)
+        generateRecipes(fullPromptForAI)
     }
 
-    // NUEVO: Función para seleccionar la receta antes de ir al detalle
     fun selectRecipe(title: String) {
         val foundRecipe = _recipes.value.find { it.title == title }
         _selectedRecipe.value = foundRecipe
@@ -88,13 +97,11 @@ class RecipeViewModel : ViewModel() {
             _isLoading.value = true
 
             try {
-                // Dependiendo del interruptor, usa la red o usa la mentira
                 val response = if (USE_MOCK_API) {
                     simulateGeminiAI(ingredientsText)
                 } else {
                     RetrofitClient.instance.getRecipes(ingredientsText)
                 }
-
                 _recipes.value = response
 
             } catch (e: Exception) {
@@ -106,7 +113,6 @@ class RecipeViewModel : ViewModel() {
         }
     }
 
-    // Tu simulador, guardado aquí a salvo hasta que lo borres al final del proyecto
     private fun simulateGeminiAI(ingredientsText: String): List<RecipeData> {
         val result = mutableListOf<RecipeData>()
         val ingredients = ingredientsText.lowercase()
@@ -150,4 +156,73 @@ class RecipeViewModel : ViewModel() {
         }
         return result
     }
+
+    // --- FUNCIÓN AUXILIAR: Traduce los [1, 5, 8] a "Bacon, Pan, Pollo" ---
+    private fun getFoodNamesFromIds(ids: Set<Int>): String {
+        if (ids.isEmpty()) return "Ninguno"
+        // Filtramos la lista de productos iniciales buscando los que coinciden con los IDs
+        return initialProducts
+            .filter { product -> ids.contains(product.id) }
+            .joinToString(", ") { product -> product.name }
+    }
+
+    // --- EL CONSTRUCTOR DEL SUPER-PROMPT ---
+    private fun buildAIPrompt(baseIngredients: String): String {
+        val dislikes = getFoodNamesFromIds(_dislikedFoodIds.value)
+        val staples = getFoodNamesFromIds(_stapleFoodIds.value)
+        val restrictions = if (_userRestrictions.value.isEmpty() || _userRestrictions.value.contains("Ninguna")) {
+            "Ninguna"
+        } else {
+            _userRestrictions.value.joinToString(", ")
+        }
+
+        // Construimos el texto exacto que leerá la IA
+        return """
+            Actúa como un chef nutricionista experto. Crea recetas utilizando principalmente estos ingredientes: $baseIngredients.
+            
+            Es VITAL que respetes este contexto del usuario para generar la receta:
+            - Raciones a cocinar: ${_userPortions.value.ifEmpty { "1 persona" }}
+            - Nivel de experiencia en cocina: ${_userLevel.value.ifEmpty { "Intermedio" }}
+            - Tiempo máximo de preparación: ${_userTime.value.ifEmpty { "Sin límite" }}
+            - Restricciones dietéticas o alergias: $restrictions
+            - ALIMENTOS PROHIBIDOS (NO incluyas esto bajo ningún concepto): $dislikes
+            - Alimentos de la despensa del usuario que puedes usar libremente como apoyo: $staples
+            
+            Instrucciones extra: Ajusta las cantidades matemáticas de los ingredientes basándote estrictamente en el número de raciones.
+        """.trimIndent()
+    }
+
+    // ---------------------------------------------------------
+    // BLOQUE 2: NUEVA MEMORIA GLOBAL (Onboarding y Configuración)
+    // ---------------------------------------------------------
+
+    private val _userGender = MutableStateFlow("")
+    val userGender = _userGender.asStateFlow()
+
+    private val _userPortions = MutableStateFlow("")
+    val userPortions = _userPortions.asStateFlow()
+
+    private val _userLevel = MutableStateFlow("")
+    val userLevel = _userLevel.asStateFlow()
+
+    private val _userTime = MutableStateFlow("")
+    val userTime = _userTime.asStateFlow()
+
+    private val _userRestrictions = MutableStateFlow<Set<String>>(emptySet())
+    val userRestrictions = _userRestrictions.asStateFlow()
+
+    private val _dislikedFoodIds = MutableStateFlow<Set<Int>>(emptySet())
+    val dislikedFoodIds = _dislikedFoodIds.asStateFlow()
+
+    private val _stapleFoodIds = MutableStateFlow<Set<Int>>(emptySet())
+    val stapleFoodIds = _stapleFoodIds.asStateFlow()
+
+    // Funciones para actualizar la memoria global
+    fun setGender(gender: String) { _userGender.value = gender }
+    fun setPortions(portions: String) { _userPortions.value = portions }
+    fun setLevel(level: String) { _userLevel.value = level }
+    fun setTime(time: String) { _userTime.value = time }
+    fun setRestrictions(restrictions: Set<String>) { _userRestrictions.value = restrictions }
+    fun setDislikedFoods(foods: Set<Int>) { _dislikedFoodIds.value = foods }
+    fun setStapleFoods(foods: Set<Int>) { _stapleFoodIds.value = foods }
 }
